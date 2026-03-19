@@ -14,7 +14,7 @@ admin.initializeApp({
 const app = express();
 app.use(express.json()); // Para leer JSON en el body
 
-// 🔹 Guardar recordatorio con campo createdAt
+//Guardar recordatorio con campo createdAt
 app.post("/scheduleReminder", async (req, res) => {
   const { userId, title, body, scheduledDate, alerta } = req.body;
 
@@ -28,9 +28,9 @@ app.post("/scheduleReminder", async (req, res) => {
       status: "pending",
       createdAt: new Date() // nuevo campo
     });
-    res.send("✅ Recordatorio guardado en Firestore");
+    res.send("Recordatorio guardado en Firestore");
   } catch (error) {
-    res.status(500).send(`❌ Error al guardar recordatorio: ${error}`);
+    res.status(500).send(`Error al guardar recordatorio: ${error}`);
   }
 });
 
@@ -89,13 +89,13 @@ async function checkReminders() {
           console.log(`✅ Notificación enviada a ${reminder.userId}`);
           await doc.ref.update({ status: "sent" });
         } catch (error) {
-          console.error(`❌ Error al enviar notificación: ${error}`);
+          console.error(`Error al enviar notificación: ${error}`);
         }
       } else {
-        console.log(`⚠️ Usuario ${reminder.userId} no tiene token registrado`);
+        console.log(`Usuario ${reminder.userId} no tiene token registrado`);
       }
     } else {
-      console.log(`⏳ Recordatorio ${doc.id} aún no toca (programado para ${scheduledDate})`);
+      console.log(`Recordatorio ${doc.id} aún no toca (programado para ${scheduledDate})`);
     }
   });
 }
