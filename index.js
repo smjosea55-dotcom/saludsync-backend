@@ -55,7 +55,7 @@ app.listen(process.env.PORT || 3000, () => {
   console.log("Servidor listo en Railway");
 });
 
-// 🔹 Job que respeta tiempos
+// Job que respeta tiempos
 async function checkReminders() {
   const now = new Date();
 
@@ -86,7 +86,7 @@ async function checkReminders() {
 
         try {
           await admin.messaging().send(message);
-          console.log(`✅ Notificación enviada a ${reminder.userId}`);
+          console.log(`Notificación enviada a ${reminder.userId}`);
           await doc.ref.update({ status: "sent" });
         } catch (error) {
           console.error(`Error al enviar notificación: ${error}`);
