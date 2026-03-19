@@ -30,4 +30,6 @@ app.get("/sendNotification", async (req, res) => {
   }
 });
 
-app.listen(3000, () => console.log("Servidor listo en Railway"));
+app.listen(process.env.PORT || 3000, () => {
+  console.log("Servidor listo en Railway");
+});
