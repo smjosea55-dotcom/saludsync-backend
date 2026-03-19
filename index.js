@@ -2,6 +2,9 @@ const express = require("express");
 const admin = require("firebase-admin");
 
 // Leer credenciales desde variable de entorno
+if (!process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON) {
+  throw new Error("La variable GOOGLE_APPLICATION_CREDENTIALS_JSON no está definida en Railway");
+}
 const serviceAccount = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
 
 admin.initializeApp({
