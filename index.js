@@ -14,6 +14,7 @@ admin.initializeApp({
 const app = express();
 app.use(express.json()); // Para leer JSON en el body
 
+// 🔹 Guardar recordatorio con campo createdAt
 app.post("/scheduleReminder", async (req, res) => {
   const { userId, title, body, scheduledDate, alerta } = req.body;
 
@@ -24,7 +25,8 @@ app.post("/scheduleReminder", async (req, res) => {
       body,
       scheduledDate: new Date(scheduledDate),
       alerta,
-      status: "pending"
+      status: "pending",
+      createdAt: new Date() // nuevo campo
     });
     res.send("✅ Recordatorio guardado en Firestore");
   } catch (error) {
@@ -53,6 +55,7 @@ app.listen(process.env.PORT || 3000, () => {
   console.log("Servidor listo en Railway");
 });
 
+// 🔹 Job que respeta tiempos
 async function checkReminders() {
   const now = new Date();
 
@@ -63,11 +66,12 @@ async function checkReminders() {
 
   snapshot.forEach(async (doc) => {
     const reminder = doc.data();
-    const scheduledDate = reminder.scheduledDate.toDate(); // Firestore Timestamp → JS Date
+    const scheduledDate = reminder.scheduledDate.toDate();
+    const createdAt = reminder.createdAt?.toDate();
 
-    // 🔹 Nueva condición: solo enviar si ya llegó la hora exacta
-    if (scheduledDate <= now) {
-      // Buscar token del usuario
+    // Condición: solo enviar si ya llegó la hora programada
+    // y además no se dispara inmediatamente al minuto de creado
+    if (scheduledDate <= now && (!createdAt || (now - createdAt) > 60 * 1000)) {
       const userDoc = await admin.firestore().collection("users").doc(reminder.userId).get();
       const userToken = userDoc.data()?.fcmToken;
 
@@ -83,7 +87,6 @@ async function checkReminders() {
         try {
           await admin.messaging().send(message);
           console.log(`✅ Notificación enviada a ${reminder.userId}`);
-
           await doc.ref.update({ status: "sent" });
         } catch (error) {
           console.error(`❌ Error al enviar notificación: ${error}`);
@@ -96,5 +99,6 @@ async function checkReminders() {
     }
   });
 }
+
 // Ejecutar cada minuto
 setInterval(checkReminders, 60 * 1000);
