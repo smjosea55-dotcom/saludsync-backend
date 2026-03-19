@@ -58,37 +58,43 @@ async function checkReminders() {
 
   const snapshot = await admin.firestore()
     .collection("reminders")
-    .where("scheduledDate", "<=", now)
     .where("status", "==", "pending")
     .get();
 
   snapshot.forEach(async (doc) => {
     const reminder = doc.data();
+    const scheduledDate = reminder.scheduledDate.toDate(); // Firestore Timestamp → JS Date
 
-    // Buscar token del usuario
-    const userDoc = await admin.firestore().collection("users").doc(reminder.userId).get();
-    const userToken = userDoc.data()?.fcmToken;
+    // 🔹 Nueva condición: solo enviar si ya llegó la hora exacta
+    if (scheduledDate <= now) {
+      // Buscar token del usuario
+      const userDoc = await admin.firestore().collection("users").doc(reminder.userId).get();
+      const userToken = userDoc.data()?.fcmToken;
 
-    if (userToken) {
-      const message = {
-        token: userToken,
-        notification: {
-          title: reminder.title,
-          body: reminder.body
+      if (userToken) {
+        const message = {
+          token: userToken,
+          notification: {
+            title: reminder.title,
+            body: reminder.body
+          }
+        };
+
+        try {
+          await admin.messaging().send(message);
+          console.log(`✅ Notificación enviada a ${reminder.userId}`);
+
+          await doc.ref.update({ status: "sent" });
+        } catch (error) {
+          console.error(`❌ Error al enviar notificación: ${error}`);
         }
-      };
-
-      try {
-        await admin.messaging().send(message);
-        console.log(`✅ Notificación enviada a ${reminder.userId}`);
-
-        await doc.ref.update({ status: "sent" });
-      } catch (error) {
-        console.error(`❌ Error al enviar notificación: ${error}`);
+      } else {
+        console.log(`⚠️ Usuario ${reminder.userId} no tiene token registrado`);
       }
+    } else {
+      console.log(`⏳ Recordatorio ${doc.id} aún no toca (programado para ${scheduledDate})`);
     }
   });
 }
-
 // Ejecutar cada minuto
 setInterval(checkReminders, 60 * 1000);
