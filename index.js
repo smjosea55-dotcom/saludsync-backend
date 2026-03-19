@@ -12,6 +12,25 @@ admin.initializeApp({
 });
 
 const app = express();
+app.use(express.json()); // Para leer JSON en el body
+
+app.post("/scheduleReminder", async (req, res) => {
+  const { userId, title, body, scheduledDate, alerta } = req.body;
+
+  try {
+    await admin.firestore().collection("reminders").add({
+      userId,
+      title,
+      body,
+      scheduledDate: new Date(scheduledDate),
+      alerta,
+      status: "pending"
+    });
+    res.send("✅ Recordatorio guardado en Firestore");
+  } catch (error) {
+    res.status(500).send(`❌ Error al guardar recordatorio: ${error}`);
+  }
+});
 
 app.get("/sendNotification", async (req, res) => {
   const message = {
@@ -33,3 +52,43 @@ app.get("/sendNotification", async (req, res) => {
 app.listen(process.env.PORT || 3000, () => {
   console.log("Servidor listo en Railway");
 });
+
+async function checkReminders() {
+  const now = new Date();
+
+  const snapshot = await admin.firestore()
+    .collection("reminders")
+    .where("scheduledDate", "<=", now)
+    .where("status", "==", "pending")
+    .get();
+
+  snapshot.forEach(async (doc) => {
+    const reminder = doc.data();
+
+    // Buscar token del usuario
+    const userDoc = await admin.firestore().collection("users").doc(reminder.userId).get();
+    const userToken = userDoc.data()?.fcmToken;
+
+    if (userToken) {
+      const message = {
+        token: userToken,
+        notification: {
+          title: reminder.title,
+          body: reminder.body
+        }
+      };
+
+      try {
+        await admin.messaging().send(message);
+        console.log(`✅ Notificación enviada a ${reminder.userId}`);
+
+        await doc.ref.update({ status: "sent" });
+      } catch (error) {
+        console.error(`❌ Error al enviar notificación: ${error}`);
+      }
+    }
+  });
+}
+
+// Ejecutar cada minuto
+setInterval(checkReminders, 60 * 1000);
