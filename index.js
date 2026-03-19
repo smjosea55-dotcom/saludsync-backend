@@ -1,6 +1,8 @@
 const express = require("express");
 const admin = require("firebase-admin");
-const serviceAccount = require("./service-account.json"); // tu JSON descargado
+
+// Leer credenciales desde variable de entorno
+const serviceAccount = JSON.parse(process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON);
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
@@ -8,10 +10,9 @@ admin.initializeApp({
 
 const app = express();
 
-// Ruta para enviar notificación
 app.get("/sendNotification", async (req, res) => {
   const message = {
-    token: req.query.token, // token del dispositivo
+    token: req.query.token,
     notification: {
       title: req.query.title || "Recordatorio",
       body: req.query.body || "Tu cita está programada"
