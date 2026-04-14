@@ -67,11 +67,9 @@ async function checkReminders() {
   snapshot.forEach(async (doc) => {
     const reminder = doc.data();
     const scheduledDate = reminder.scheduledDate.toDate();
-    const createdAt = reminder.createdAt?.toDate();
 
     // Condición: solo enviar si ya llegó la hora programada
-    // y además no se dispara inmediatamente al minuto de creado
-    if (scheduledDate <= now && (!createdAt || (now - createdAt) > 60 * 1000)) {
+    if (scheduledDate <= now) {
       const userDoc = await admin.firestore().collection("users").doc(reminder.userId).get();
       const userToken = userDoc.data()?.fcmToken;
 
@@ -100,5 +98,5 @@ async function checkReminders() {
   });
 }
 
-// Ejecutar cada minuto
-setInterval(checkReminders, 60 * 1000);
+// Ejecutar cada 10 segundos para reducir el retraso de entrega
+setInterval(checkReminders, 10 * 1000);
